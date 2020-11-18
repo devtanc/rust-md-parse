@@ -49,11 +49,12 @@ fn main() {
 
 fn tokenize_contents(contents: &str) -> Vec<(TokenType, String, usize)> {
   let mut tokens: Vec<(TokenType, String, usize)> = Vec::new();
-  let mut word: Vec<char> = Vec::new();
   let mut current_word_length = 0;
   let mut word_index = 0;
+  let mut processed_special_character: bool;
 
   for (i, character) in contents.chars().enumerate() {
+    processed_special_character = true;
     match character {
       // Special characters
       '*' => tokens.push((TokenType::Asterisk, String::from(character), i)),
@@ -78,27 +79,30 @@ fn tokenize_contents(contents: &str) -> Vec<(TokenType, String, usize)> {
       '\r' => tokens.push((TokenType::CarriageReturn, String::from(character), i)),
       // Everything else
       _ => {
-        if word.len() == 0 {
+        processed_special_character = false;
+        if current_word_length == 0 {
           word_index = i
         }
-        word.push(character);
       }
     }
 
-    let length = word.len();
-    let has_current_word = length > 0;
-    let processed_special_character = current_word_length == length;
+    let has_current_word = current_word_length > 0;
 
     if has_current_word && processed_special_character {
       // There will always be at least one item in the vector
       let special_token = tokens.pop().unwrap();
-      tokens.push((TokenType::Word, word.iter().collect(), word_index));
+      let start = word_index;
+      let end = word_index + current_word_length;
+      tokens.push((
+        TokenType::Word,
+        String::from(&contents[start..end]),
+        word_index,
+      ));
       tokens.push(special_token);
-      // Reset word variables
-      word.clear();
+      // Reset word length
       current_word_length = 0;
     } else {
-      current_word_length = length;
+      current_word_length = current_word_length + 1;
     }
   }
 
