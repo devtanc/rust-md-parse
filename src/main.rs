@@ -4,6 +4,7 @@ use std::fs;
 use std::io::{BufWriter, Write};
 
 #[derive(Debug)]
+#[derive(Copy, Clone)]
 enum TokenType {
   Asterisk,
   Backslash,
@@ -14,12 +15,15 @@ enum TokenType {
   Dot,
   DoubleQuotes,
   EOF,
+  Exclamation,
   Hashtag,
+  Letter,
   Minus,
   Newline,
   ParenthesisClose,
   ParenthesisOpen,
   Plus,
+  SingleQuote,
   Space,
   SquareBracketClose,
   SquareBracketOpen,
@@ -41,20 +45,15 @@ fn main() {
   println!("In file {}", filename);
 
   let contents = fs::read_to_string(&filename).expect("Something went wrong reading the file");
-
-  let result = tokenize_contents(&contents);
+  let result = process_words(tokenize_contents(&contents));
 
   print_to_file(filename, result);
 }
 
 fn tokenize_contents(contents: &str) -> Vec<(TokenType, String, usize)> {
   let mut tokens: Vec<(TokenType, String, usize)> = Vec::new();
-  let mut current_word_length = 0;
-  let mut word_index = 0;
-  let mut processed_special_character: bool;
 
   for (i, character) in contents.chars().enumerate() {
-    processed_special_character = true;
     match character {
       // Special characters
       '*' => tokens.push((TokenType::Asterisk, String::from(character), i)),
@@ -64,11 +63,13 @@ fn tokenize_contents(contents: &str) -> Vec<(TokenType, String, usize)> {
       '{' => tokens.push((TokenType::CurlyBracketOpen, String::from(character), i)),
       '.' => tokens.push((TokenType::Dot, String::from(character), i)),
       '"' => tokens.push((TokenType::DoubleQuotes, String::from(character), i)),
+      '!' => tokens.push((TokenType::Exclamation, String::from(character), i)),
       '#' => tokens.push((TokenType::Hashtag, String::from(character), i)),
       '-' => tokens.push((TokenType::Minus, String::from(character), i)),
       ')' => tokens.push((TokenType::ParenthesisClose, String::from(character), i)),
       '(' => tokens.push((TokenType::ParenthesisOpen, String::from(character), i)),
       '+' => tokens.push((TokenType::Plus, String::from(character), i)),
+      '\'' => tokens.push((TokenType::SingleQuote, String::from(character), i)),
       ']' => tokens.push((TokenType::SquareBracketClose, String::from(character), i)),
       '[' => tokens.push((TokenType::SquareBracketOpen, String::from(character), i)),
       '_' => tokens.push((TokenType::Underscore, String::from(character), i)),
@@ -78,37 +79,42 @@ fn tokenize_contents(contents: &str) -> Vec<(TokenType, String, usize)> {
       '\t' => tokens.push((TokenType::Tab, String::from(character), i)),
       '\r' => tokens.push((TokenType::CarriageReturn, String::from(character), i)),
       // Everything else
-      _ => {
-        processed_special_character = false;
-        if current_word_length == 0 {
-          word_index = i
-        }
-      }
-    }
-
-    let has_current_word = current_word_length > 0;
-
-    if has_current_word && processed_special_character {
-      // There will always be at least one item in the vector
-      let special_token = tokens.pop().unwrap();
-      let start = word_index;
-      let end = word_index + current_word_length;
-      tokens.push((
-        TokenType::Word,
-        String::from(&contents[start..end]),
-        word_index,
-      ));
-      tokens.push(special_token);
-      // Reset word length
-      current_word_length = 0;
-    } else {
-      current_word_length = current_word_length + 1;
+      _ => tokens.push((TokenType::Letter, String::from(character), i)),
     }
   }
 
   tokens.push((TokenType::EOF, String::from(""), contents.chars().count()));
 
   return tokens;
+}
+
+fn process_words(tokenized_characters: Vec<(TokenType, String, usize)>) -> Vec<(TokenType, String, usize)> {
+  let mut processed_tokens: Vec<(TokenType, String, usize)> = Vec::new();
+  let mut start_of_word: usize = 0;
+  let mut word: String = "".to_owned();
+
+  for (i, token) in tokenized_characters.iter().enumerate() {
+    match token {
+      (TokenType::Letter, contents, _) => {
+        if word.len() == 0 {
+          start_of_word = i
+        }
+
+        word.push_str(contents)
+      },
+      _ => {
+        if start_of_word > 0 || word.len() > 0 {
+          processed_tokens.push((TokenType::Word, word, start_of_word));
+          word = "".to_owned();
+          start_of_word = 0;
+        }
+        let (token_type, contents, index) = token;
+        processed_tokens.push((*token_type, contents.clone(), *index));
+      }
+    }
+  }
+
+  return processed_tokens;
 }
 
 fn print_to_file(filename: String, tuples: Vec<(TokenType, String, usize)>) {
