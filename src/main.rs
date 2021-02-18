@@ -45,7 +45,8 @@ fn main() {
   println!("In file {}", filename);
 
   let contents = fs::read_to_string(&filename).expect("Something went wrong reading the file");
-  let result = process_words(tokenize_contents(&contents));
+  let character_tokens = tokenize_contents(&contents);
+  let result = process_words(character_tokens);
 
   print_to_file(filename, result);
 }
