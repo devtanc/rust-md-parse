@@ -28,6 +28,7 @@ enum TokenType {
   SquareBracketClose,
   SquareBracketOpen,
   Tab,
+  Uncategorized,
   Underscore,
   Word,
 }
@@ -80,7 +81,8 @@ fn tokenize_contents(contents: &str) -> Vec<(TokenType, String, usize)> {
       '\t' => tokens.push((TokenType::Tab, String::from(character), i)),
       '\r' => tokens.push((TokenType::CarriageReturn, String::from(character), i)),
       // Everything else
-      _ => tokens.push((TokenType::Letter, String::from(character), i)),
+      'A'..='Z' | 'a'..='z' => tokens.push((TokenType::Letter, String::from(character), i)),
+      _ => tokens.push((TokenType::Uncategorized, String::from(character), i)),
     }
   }
 
