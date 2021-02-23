@@ -1,4 +1,8 @@
 debug/
 target/
+test_files/*.txt
+test_files/*.pdm.md
 
 **/*.rs.bk
+
+.DS_Store
