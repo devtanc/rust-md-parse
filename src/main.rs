@@ -43,7 +43,7 @@ fn main() {
   let args: Vec<String> = env::args().collect();
   let filename = format!("test_files/{}", &args[1]);
 
-  println!("In file {}", filename);
+  println!("Tokenizing {}", filename);
 
   let contents = fs::read_to_string(&filename).expect("Something went wrong reading the file");
   let result = tokenize_contents(&contents);
