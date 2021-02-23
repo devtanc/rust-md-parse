@@ -46,8 +46,7 @@ fn main() {
   println!("In file {}", filename);
 
   let contents = fs::read_to_string(&filename).expect("Something went wrong reading the file");
-  let character_tokens = tokenize_contents(&contents);
-  let result = process_words(character_tokens);
+  let result = tokenize_contents(&contents);
 
   print_to_file(filename, result);
 }
@@ -80,18 +79,19 @@ fn tokenize_contents(contents: &str) -> Vec<(TokenType, String, usize)> {
       '\n' => tokens.push((TokenType::Newline, String::from(character), i)),
       '\t' => tokens.push((TokenType::Tab, String::from(character), i)),
       '\r' => tokens.push((TokenType::CarriageReturn, String::from(character), i)),
-      // Everything else
+      // Letters
       'A'..='Z' | 'a'..='z' => tokens.push((TokenType::Letter, String::from(character), i)),
+      // Everything else
       _ => tokens.push((TokenType::Uncategorized, String::from(character), i)),
     }
   }
 
   tokens.push((TokenType::EOF, String::from(""), contents.chars().count()));
 
-  return tokens;
+  return process_letters_into_words(tokens);
 }
 
-fn process_words(tokenized_characters: Vec<(TokenType, String, usize)>) -> Vec<(TokenType, String, usize)> {
+fn process_letters_into_words(tokenized_characters: Vec<(TokenType, String, usize)>) -> Vec<(TokenType, String, usize)> {
   let mut processed_tokens: Vec<(TokenType, String, usize)> = Vec::new();
   let mut start_of_word: usize = 0;
   let mut word: String = "".to_owned();
